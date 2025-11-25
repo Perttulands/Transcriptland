@@ -5,7 +5,7 @@ import { ApiKeyPrompt, getStoredApiKey } from '../components/ApiKeyPrompt';
 import { liteLLMService } from '../services/litellm.service';
 import { markdownService } from '../services/markdown.service';
 import { AgentMessage, AgentRole, Insight, MarkdownOutput } from '../types';
-import { Download, Sparkles, Key, Settings } from 'lucide-react';
+import { Download, Sparkles, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function Dashboard() {
@@ -27,7 +27,8 @@ export function Dashboard() {
 
     }, []);
 
-    const handleTranscriptReady = (content: string) => {
+    const handleFileSelect = (file: File | null, content: string) => {
+        setSelectedFile(file);
         setTranscript(content);
         setMessages([]);
         setMarkdownOutput('');
@@ -161,7 +162,7 @@ export function Dashboard() {
                     <h2 className="text-xl font-semibold text-solita-black mb-4">Upload Transcript</h2>
 
                     <TranscriptInput
-                        onTranscriptReady={handleTranscriptReady}
+                        onFileSelect={handleFileSelect}
                         selectedFile={selectedFile}
                         onRemoveFile={handleRemoveFile}
                     />

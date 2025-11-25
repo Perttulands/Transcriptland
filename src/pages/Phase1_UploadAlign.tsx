@@ -6,7 +6,6 @@ import { ApiKeyPrompt, getStoredApiKey } from '../components/ApiKeyPrompt';
 import { plannerAgent } from '../services/planner.agent';
 import { agentLogger } from '../services/agent-logger.service';
 import { liteLLMService } from '../services/litellm.service';
-import { settingsService } from '../services/settings.service';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
 import { PlannerOutput } from '../types/phases';
 import { AgentLog } from '../types/logging';
@@ -22,7 +21,6 @@ export function Phase1_UploadAlign() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [transcript, setTranscript] = useState<string>('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [plannerOutput, setPlannerOutput] = useState<PlannerOutput | null>(null);
     const [logs, setLogs] = useState<AgentLog[]>([]);
 
     // API Key and Settings
@@ -42,9 +40,6 @@ export function Phase1_UploadAlign() {
             liteLLMService.initialize(apiKey);
             setHasApiKey(true);
         }
-
-        // Load settings
-        const settings = settingsService.load();
     }, []);
 
     // Subscribe to logger updates
@@ -58,7 +53,6 @@ export function Phase1_UploadAlign() {
     const handleFileSelect = (file: File | null, content: string) => {
         setSelectedFile(file);
         setTranscript(content);
-        setPlannerOutput(null);
         setContextUnderstanding('');
         setMetadataTags([]);
         setAnalysisObjective('');
@@ -67,7 +61,6 @@ export function Phase1_UploadAlign() {
     const handleRemoveFile = () => {
         setSelectedFile(null);
         setTranscript('');
-        setPlannerOutput(null);
         setContextUnderstanding('');
         setMetadataTags([]);
         setAnalysisObjective('');
@@ -89,7 +82,6 @@ export function Phase1_UploadAlign() {
                 (objective) => setAnalysisObjective(objective)
             );
 
-            setPlannerOutput(output);
             setContextUnderstanding(output.contextUnderstanding);
             setMetadataTags(output.metadataTags);
             setAnalysisObjective(output.analysisObjective);
