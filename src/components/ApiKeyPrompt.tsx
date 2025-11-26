@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Key, Loader2 } from 'lucide-react';
-import { liteLLMService } from '../services/litellm.service';
+import { X, Key, Loader2, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StandardInput } from './ui/StandardInput';
+import { llmService } from '../services/llm.service';
+import { settingsService } from '../services/settings.service';
+import { LLM_PROVIDER_CONFIGS, LLMProvider } from '../constants/llm-providers';
 
 interface ApiKeyPromptProps {
     isOpen: boolean;
@@ -10,18 +12,24 @@ interface ApiKeyPromptProps {
     onKeySet: () => void;
 }
 
-const API_KEY_STORAGE_KEY = 'litellm_api_key';
-
 export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
+    const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(settingsService.getProvider());
     const [apiKey, setApiKey] = useState('');
     const [isValidating, setIsValidating] = useState(false);
 
     useEffect(() => {
-        const savedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-        if (savedKey) {
-            setApiKey(savedKey);
+        if (!isOpen) {
+            return;
         }
-    }, []);
+        const provider = settingsService.getProvider();
+        setSelectedProvider(provider);
+        setApiKey(settingsService.getApiKey(provider) || '');
+    }, [isOpen]);
+
+    const handleProviderChange = (provider: LLMProvider) => {
+        setSelectedProvider(provider);
+        setApiKey(settingsService.getApiKey(provider) || '');
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,12 +42,13 @@ export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
         setIsValidating(true);
 
         try {
-            const isValid = await liteLLMService.validateApiKey(apiKey);
+            const isValid = await llmService.validateApiKey(selectedProvider, apiKey);
 
             if (isValid) {
-                localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
-                liteLLMService.initialize(apiKey);
-                toast.success('API key validated successfully!');
+                settingsService.saveApiKey(selectedProvider, apiKey);
+                settingsService.setProvider(selectedProvider);
+                llmService.initialize(apiKey, selectedProvider);
+                toast.success('Provider configured successfully!');
                 onKeySet();
                 onClose();
             } else {
@@ -60,7 +69,7 @@ export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-solita-black flex items-center gap-2">
                         <Key className="w-5 h-5 text-solita-ochre" />
-                        LiteLLM API Key
+                        LLM Provider & API Key
                     </h2>
                     <button
                         onClick={onClose}
@@ -70,16 +79,41 @@ export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
                     </button>
                 </div>
 
-                <p className="text-sm text-solita-dark-grey mb-4">
-                    To use AI-powered analysis, please provide your LiteLLM API key.
-                </p>
+                <div className="mb-4 space-y-2">
+                    <p className="text-sm text-solita-dark-grey">Select which LLM provider you want to use.</p>
+                    <div className="flex flex-col gap-2">
+                        {Object.values(LLM_PROVIDER_CONFIGS).map((providerConfig) => (
+                            <button
+                                key={providerConfig.id}
+                                type="button"
+                                onClick={() => handleProviderChange(providerConfig.id)}
+                                className={`flex items-start gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${selectedProvider === providerConfig.id
+                                    ? 'border-solita-ochre bg-solita-ochre/10'
+                                    : 'border-solita-light-grey hover:border-solita-ochre/60'
+                                    }`}
+                                disabled={isValidating}
+                            >
+                                <div className="mt-1">
+                                    <Globe className={`w-4 h-4 ${selectedProvider === providerConfig.id ? 'text-solita-ochre' : 'text-solita-mid-grey'}`} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-solita-black">{providerConfig.label}</p>
+                                    <p className="text-xs text-solita-dark-grey">{providerConfig.description}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
+                <p className="text-sm text-solita-dark-grey mb-4">
+                    {LLM_PROVIDER_CONFIGS[selectedProvider].apiKeyLabel}
+                </p>
                 <form onSubmit={handleSubmit}>
                     <StandardInput
                         type="password"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="Enter your LiteLLM API key"
+                        placeholder={LLM_PROVIDER_CONFIGS[selectedProvider].apiKeyPlaceholder}
                         className="mb-4"
                         disabled={isValidating}
                     />
@@ -112,17 +146,18 @@ export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
                 </form>
 
                 <p className="text-xs text-solita-mid-grey mt-4">
-                    Your API key is stored locally in your browser and never sent to our servers.
+                    Your API key is stored locally and never sent to our servers. Need help?{' '}
+                    <a
+                        href={LLM_PROVIDER_CONFIGS[selectedProvider].docsUrl}
+                        className="text-solita-ochre hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        Provider docs
+                    </a>
+                    .
                 </p>
             </div>
         </div>
     );
-}
-
-export function getStoredApiKey(): string | null {
-    return localStorage.getItem(API_KEY_STORAGE_KEY);
-}
-
-export function clearStoredApiKey(): void {
-    localStorage.removeItem(API_KEY_STORAGE_KEY);
 }

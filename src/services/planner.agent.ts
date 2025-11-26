@@ -1,4 +1,4 @@
-import { liteLLMService } from './litellm.service';
+import { llmService } from './llm.service';
 import { agentLogger } from './agent-logger.service';
 import { settingsService } from './settings.service';
 import { DEFAULT_INSTRUCTIONS } from '../constants/default-instructions';
@@ -25,17 +25,18 @@ ${firstChars}
 
 Write one sentence describing what this transcript is about.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -62,18 +63,19 @@ ${firstChars}
 
 Write one sentence describing what this transcript is about.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }
@@ -98,17 +100,18 @@ ${transcript.substring(0, 2000)}
 
 Return only comma-separated tags.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -136,17 +139,18 @@ ${transcript.substring(0, 1500)}
 
 Propose an analysis objective for this transcript.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -174,18 +178,19 @@ ${transcript.substring(0, 1500)}
 
 Propose an analysis objective for this transcript.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }
@@ -250,17 +255,18 @@ ${transcript.substring(0, 2000)}
 
 Create an analysis framework with 3-5 segments that will guide the extraction of insights from this transcript.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -321,18 +327,19 @@ ${transcript.substring(0, 2000)}
 
 Create an analysis framework with 3-5 segments that will guide the extraction of insights from this transcript.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Planner Agent',
             'planner',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }

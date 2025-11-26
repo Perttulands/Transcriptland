@@ -1,5 +1,7 @@
 // Settings service for persisting user preferences using localStorage
 
+import { DEFAULT_LLM_PROVIDER, LLM_PROVIDER_CONFIGS, LLMProvider } from '../constants/llm-providers';
+
 export type AgentType = 'planner' | 'writer' | 'critic' | 'gapAnalysis';
 
 export interface AgentSettings {
@@ -8,7 +10,8 @@ export interface AgentSettings {
 }
 
 export interface AppSettings {
-    apiKey?: string;
+    provider: LLMProvider;
+    apiKeys: Partial<Record<LLMProvider, string>>;
     agents: {
         planner: AgentSettings;
         writer: AgentSettings;
@@ -17,27 +20,59 @@ export interface AppSettings {
     };
 }
 
+const buildAgentDefaults = (provider: LLMProvider): AppSettings['agents'] => {
+    const defaultModel = LLM_PROVIDER_CONFIGS[provider].defaultModel;
+    return {
+        planner: { model: defaultModel, instructions: {} },
+        writer: { model: defaultModel, instructions: {} },
+        critic: { model: defaultModel, instructions: {} },
+        gapAnalysis: { model: defaultModel, instructions: {} }
+    };
+};
+
 const STORAGE_KEY = 'transcript_processor_settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
-    agents: {
-        planner: {
-            model: 'google/gemini-2.0-flash-001',
-            instructions: {}
-        },
-        writer: {
-            model: 'google/gemini-2.0-flash-001',
-            instructions: {}
-        },
-        critic: {
-            model: 'google/gemini-2.0-flash-001',
-            instructions: {}
-        },
-        gapAnalysis: {
-            model: 'google/gemini-2.0-flash-001',
-            instructions: {}
-        }
-    }
+    provider: DEFAULT_LLM_PROVIDER,
+    apiKeys: {},
+    agents: buildAgentDefaults(DEFAULT_LLM_PROVIDER)
+};
+
+const LEGACY_PROVIDER_MODELS: Partial<Record<LLMProvider, Set<string>>> = {
+    google: new Set(['gemini-2.0-flash-001', 'google/gemini-2.0-flash-001'])
+};
+
+const isValidProvider = (value: string | undefined): value is LLMProvider => {
+    if (!value) return false;
+    return Object.prototype.hasOwnProperty.call(LLM_PROVIDER_CONFIGS, value);
+};
+
+const normalizeAgentsForProvider = (
+    agents: Partial<AppSettings['agents']> | undefined,
+    provider: LLMProvider,
+    forceReset = false
+): AppSettings['agents'] => {
+    const defaultAgents = buildAgentDefaults(provider);
+    const allowedModels = new Set(LLM_PROVIDER_CONFIGS[provider].models.map((m) => m.id));
+
+    const mapAgent = (agent: AgentType): AgentSettings => {
+        const existing = agents?.[agent];
+        const modelFromExisting = existing?.model;
+        const isLegacyModel = modelFromExisting ? LEGACY_PROVIDER_MODELS[provider]?.has(modelFromExisting) : false;
+        const canReuseExisting = !forceReset && modelFromExisting && allowedModels.has(modelFromExisting) && !isLegacyModel;
+        const model = canReuseExisting ? modelFromExisting : defaultAgents[agent].model;
+        return {
+            model,
+            instructions: existing?.instructions || {}
+        };
+    };
+
+    return {
+        planner: mapAgent('planner'),
+        writer: mapAgent('writer'),
+        critic: mapAgent('critic'),
+        gapAnalysis: mapAgent('gapAnalysis')
+    };
 };
 
 class SettingsService {
@@ -53,26 +88,24 @@ class SettingsService {
             const parsed = JSON.parse(stored);
 
             // Merge with defaults to ensure all agents exist
+            const provider: LLMProvider = isValidProvider(parsed.provider)
+                ? parsed.provider
+                : DEFAULT_SETTINGS.provider;
+
+            const apiKeys: AppSettings['apiKeys'] = {
+                ...DEFAULT_SETTINGS.apiKeys,
+                ...(parsed.apiKeys || {})
+            };
+
+            // Support legacy single apiKey shape
+            if (!apiKeys[provider] && parsed.apiKey) {
+                apiKeys[provider] = parsed.apiKey;
+            }
+
             const merged: AppSettings = {
-                apiKey: parsed.apiKey,
-                agents: {
-                    planner: {
-                        model: parsed.agents?.planner?.model || DEFAULT_SETTINGS.agents.planner.model,
-                        instructions: parsed.agents?.planner?.instructions || {}
-                    },
-                    writer: {
-                        model: parsed.agents?.writer?.model || DEFAULT_SETTINGS.agents.writer.model,
-                        instructions: parsed.agents?.writer?.instructions || {}
-                    },
-                    critic: {
-                        model: parsed.agents?.critic?.model || DEFAULT_SETTINGS.agents.critic.model,
-                        instructions: parsed.agents?.critic?.instructions || {}
-                    },
-                    gapAnalysis: {
-                        model: parsed.agents?.gapAnalysis?.model || DEFAULT_SETTINGS.agents.gapAnalysis.model,
-                        instructions: parsed.agents?.gapAnalysis?.instructions || {}
-                    }
-                }
+                provider,
+                apiKeys,
+                agents: normalizeAgentsForProvider(parsed.agents, provider)
             };
             return merged;
         } catch (error) {
@@ -106,17 +139,38 @@ class SettingsService {
     /**
      * Save API key
      */
-    saveApiKey(apiKey: string): void {
+    saveApiKey(provider: LLMProvider, apiKey: string): void {
         const settings = this.load();
-        settings.apiKey = apiKey;
+        settings.apiKeys[provider] = apiKey;
         this.save(settings);
     }
 
     /**
      * Get saved API key
      */
-    getApiKey(): string | undefined {
-        return this.load().apiKey;
+    getApiKey(provider?: LLMProvider): string | undefined {
+        const resolvedProvider = provider ?? this.getProvider();
+        return this.load().apiKeys[resolvedProvider];
+    }
+
+    /**
+     * Get current LLM provider
+     */
+    getProvider(): LLMProvider {
+        return this.load().provider;
+    }
+
+    /**
+     * Update selected LLM provider and align agent defaults
+     */
+    setProvider(provider: LLMProvider): void {
+        const settings = this.load();
+        if (settings.provider === provider) {
+            return;
+        }
+        settings.provider = provider;
+        settings.agents = normalizeAgentsForProvider(settings.agents, provider, true);
+        this.save(settings);
     }
 
     /**
@@ -156,8 +210,10 @@ class SettingsService {
      */
     resetAgent(agent: AgentType): void {
         const settings = this.load();
+        const provider = settings.provider;
+        const providerDefaults = buildAgentDefaults(provider);
         settings.agents[agent] = {
-            model: DEFAULT_SETTINGS.agents[agent].model,
+            model: providerDefaults[agent].model,
             instructions: {}
         };
         this.save(settings);
@@ -168,7 +224,7 @@ class SettingsService {
      */
     resetAllAgents(): void {
         const settings = this.load();
-        settings.agents = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.agents));
+        settings.agents = buildAgentDefaults(settings.provider);
         this.save(settings);
     }
 

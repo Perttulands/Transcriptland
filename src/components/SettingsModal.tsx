@@ -1,21 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, RotateCcw, Download, Upload } from 'lucide-react';
 import { settingsService, AgentType } from '../services/settings.service';
 import { DEFAULT_INSTRUCTIONS } from '../constants/default-instructions';
 import toast from 'react-hot-toast';
+import { DEFAULT_LLM_PROVIDER, LLM_PROVIDER_CONFIGS } from '../constants/llm-providers';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
-
-const AVAILABLE_MODELS = [
-    { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', provider: 'Google' },
-    { id: 'google/gemini-1.5-pro-002', name: 'Gemini 1.5 Pro', provider: 'Google' },
-    { id: 'azure/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'Azure OpenAI' },
-    { id: 'azure/gpt-4o', name: 'GPT-4o', provider: 'Azure OpenAI' },
-    { id: 'azure/o1-mini', name: 'O1 Mini', provider: 'Azure OpenAI' },
-];
 
 const AGENT_INFO: { key: AgentType; label: string; description: string }[] = [
     { key: 'planner', label: 'Planner Agent', description: 'Analyzes context and generates analysis frameworks' },
@@ -26,6 +19,15 @@ const AGENT_INFO: { key: AgentType; label: string; description: string }[] = [
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [settings, setSettings] = useState(() => settingsService.load());
+    const provider = settings.provider ?? DEFAULT_LLM_PROVIDER;
+    const providerConfig = LLM_PROVIDER_CONFIGS[provider];
+    const availableModels = providerConfig.models;
+
+    useEffect(() => {
+        if (isOpen) {
+            setSettings(settingsService.load());
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -117,7 +119,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 {/* Model Selector */}
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-solita-black mb-2">
-                                        LLM Model
+                                        LLM Model ({providerConfig.label})
                                     </label>
                                     <select
                                         value={settings.agents[agentInfo.key].model}
@@ -133,7 +135,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         })}
                                         className="w-full px-3 py-2 border border-solita-light-grey rounded-lg focus:outline-none focus:ring-2 focus:ring-solita-ochre focus:border-transparent"
                                     >
-                                        {AVAILABLE_MODELS.map((model) => (
+                                        {availableModels.map((model) => (
                                             <option key={model.id} value={model.id}>
                                                 {model.name} ({model.provider})
                                             </option>

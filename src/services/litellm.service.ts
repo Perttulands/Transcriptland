@@ -131,21 +131,25 @@ export class LiteLLMService {
     /**
      * Generic completion method for custom prompts
      */
-    async generateCompletion(systemPrompt: string, userPrompt: string): Promise<{ content: string; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
+    async generateCompletion(
+        systemPrompt: string,
+        userPrompt: string,
+        model?: string
+    ): Promise<{ content: string; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
         return this.chatCompletion([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
-        ]);
+        ], model);
     }
 
     /**
      * Generic streaming completion method for custom prompts
      */
-    async *generateCompletionStream(systemPrompt: string, userPrompt: string): AsyncGenerator<string> {
+    async *generateCompletionStream(systemPrompt: string, userPrompt: string, model?: string): AsyncGenerator<string> {
         yield* this.chatCompletionStream([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
-        ]);
+        ], model);
     }
 
 

@@ -5,30 +5,75 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  */
 export class GeminiService {
     private genAI: GoogleGenerativeAI | null = null;
-    private model: any = null;
+    private readonly defaultModel = 'gemini-2.0-flash-001';
 
     /**
      * Initialize the Gemini API with an API key
      */
     initialize(apiKey: string): void {
         this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
     }
 
     /**
      * Check if the service is initialized
      */
     isInitialized(): boolean {
-        return this.model !== null;
+        return this.genAI !== null;
+    }
+
+    private getModelInstance(model?: string, systemPrompt?: string) {
+        if (!this.genAI) {
+            throw new Error('Gemini API not initialized. Please provide an API key.');
+        }
+        const config: { model: string; systemInstruction?: string } = {
+            model: model || this.defaultModel,
+        };
+        if (systemPrompt) {
+            config.systemInstruction = systemPrompt;
+        }
+        return this.genAI.getGenerativeModel(config);
+    }
+
+    async generateCompletion(
+        systemPrompt: string,
+        userPrompt: string,
+        model?: string
+    ): Promise<{ content: string; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } }> {
+        const generativeModel = this.getModelInstance(model, systemPrompt);
+        const result = await generativeModel.generateContent(userPrompt);
+        const response = await result.response;
+        const usage = response.usageMetadata;
+        return {
+            content: response.text() || '',
+            usage: usage ? {
+                prompt_tokens: usage.promptTokenCount ?? 0,
+                completion_tokens: usage.candidatesTokenCount ?? 0,
+                total_tokens: usage.totalTokenCount ?? 0,
+            } : undefined
+        };
+    }
+
+    async *generateCompletionStream(
+        systemPrompt: string,
+        userPrompt: string,
+        model?: string
+    ): AsyncGenerator<string> {
+        const generativeModel = this.getModelInstance(model, systemPrompt);
+        const result = await generativeModel.generateContentStream(userPrompt);
+
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) {
+                yield chunkText;
+            }
+        }
     }
 
     /**
      * Extract themes from a transcript
      */
-    async generateThemes(transcript: string): Promise<string[]> {
-        if (!this.model) {
-            throw new Error('Gemini API not initialized. Please provide an API key.');
-        }
+    async generateThemes(transcript: string, model?: string): Promise<string[]> {
+        const generativeModel = this.getModelInstance(model);
 
         const prompt = `Analyze the following transcript and extract 3-5 key themes or topics discussed. 
 Return ONLY a JSON array of theme names (strings), nothing else.
@@ -39,7 +84,7 @@ ${transcript}
 Example response format: ["Theme 1", "Theme 2", "Theme 3"]`;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            const result = await generativeModel.generateContent(prompt);
             const response = await result.response;
             const text = response.text();
 
@@ -56,10 +101,8 @@ Example response format: ["Theme 1", "Theme 2", "Theme 3"]`;
     /**
      * Analyze a specific theme in the transcript
      */
-    async analyzeTheme(transcript: string, theme: string): Promise<string> {
-        if (!this.model) {
-            throw new Error('Gemini API not initialized. Please provide an API key.');
-        }
+    async analyzeTheme(transcript: string, theme: string, model?: string): Promise<string> {
+        const generativeModel = this.getModelInstance(model);
 
         const prompt = `Analyze the following transcript focusing on the theme: "${theme}".
 
@@ -74,7 +117,7 @@ Transcript:
 ${transcript}`;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            const result = await generativeModel.generateContent(prompt);
             const response = await result.response;
             return response.text();
         } catch (error) {
@@ -86,10 +129,8 @@ ${transcript}`;
     /**
      * Stream analysis for real-time updates
      */
-    async *streamAnalysis(transcript: string, theme: string): AsyncGenerator<string> {
-        if (!this.model) {
-            throw new Error('Gemini API not initialized. Please provide an API key.');
-        }
+    async *streamAnalysis(transcript: string, theme: string, model?: string): AsyncGenerator<string> {
+        const generativeModel = this.getModelInstance(model);
 
         const prompt = `Analyze the following transcript focusing on the theme: "${theme}".
 
@@ -102,7 +143,7 @@ Transcript:
 ${transcript}`;
 
         try {
-            const result = await this.model.generateContentStream(prompt);
+            const result = await generativeModel.generateContentStream(prompt);
 
             for await (const chunk of result.stream) {
                 const chunkText = chunk.text();
@@ -120,7 +161,7 @@ ${transcript}`;
     async validateApiKey(apiKey: string): Promise<boolean> {
         try {
             const testAI = new GoogleGenerativeAI(apiKey);
-            const testModel = testAI.getGenerativeModel({ model: 'gemini-pro' });
+            const testModel = testAI.getGenerativeModel({ model: this.defaultModel });
 
             // Try a simple generation to validate
             const result = await testModel.generateContent('Hello');

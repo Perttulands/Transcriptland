@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { TranscriptInput } from '../components/TranscriptInput';
 import { AgentChatFeed } from '../components/AgentChatFeed';
-import { ApiKeyPrompt, getStoredApiKey } from '../components/ApiKeyPrompt';
-import { liteLLMService } from '../services/litellm.service';
+import { ApiKeyPrompt } from '../components/ApiKeyPrompt';
+import { llmService } from '../services/llm.service';
 import { markdownService } from '../services/markdown.service';
 import { AgentMessage, AgentRole, Insight, MarkdownOutput } from '../types';
 import { Download, Sparkles, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { settingsService } from '../services/settings.service';
 
 export function Dashboard() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -18,13 +19,11 @@ export function Dashboard() {
     const [hasApiKey, setHasApiKey] = useState(false);
 
     useEffect(() => {
-        const existingKey = getStoredApiKey();
-        if (existingKey) {
-            liteLLMService.initialize(existingKey);
+        llmService.hydrateFromSettings();
+        const provider = settingsService.getProvider();
+        if (settingsService.getApiKey(provider)) {
             setHasApiKey(true);
         }
-
-
     }, []);
 
     const handleFileSelect = (file: File | null, content: string) => {
@@ -59,7 +58,7 @@ export function Dashboard() {
             return;
         }
 
-        if (!liteLLMService.isInitialized()) {
+        if (!llmService.isInitialized()) {
             setShowApiKeyPrompt(true);
             return;
         }
@@ -70,7 +69,7 @@ export function Dashboard() {
         try {
             addMessage(AgentRole.SYSTEM, 'Analyzing transcript to extract key themes...');
 
-            const themes = await liteLLMService.generateThemes(transcript);
+            const themes = await llmService.generateThemes(transcript);
 
             addMessage(AgentRole.SYSTEM, `Found ${themes.length} themes: ${themes.join(', ')}`);
 
@@ -80,7 +79,7 @@ export function Dashboard() {
                 addMessage(AgentRole.WRITER, `Starting analysis of: ${theme}`);
 
                 try {
-                    const analysis = await liteLLMService.analyzeTheme(transcript, theme);
+                    const analysis = await llmService.analyzeTheme(transcript, theme);
                     addMessage(AgentRole.WRITER, `Completed analysis of: ${theme}`);
 
                     insights.push({

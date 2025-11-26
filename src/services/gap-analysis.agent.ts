@@ -1,4 +1,4 @@
-import { liteLLMService } from './litellm.service';
+import { llmService } from './llm.service';
 import { agentLogger } from './agent-logger.service';
 import { settingsService } from './settings.service';
 import { DEFAULT_INSTRUCTIONS } from '../constants/default-instructions';
@@ -52,18 +52,19 @@ Output a JSON array of gap suggestions in this format:
 \`\`\`
 `;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Gap Analysis Agent',
             'identify-gaps',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }
@@ -120,19 +121,20 @@ The JSON block must be wrapped in \`\`\`json ... \`\`\` and follow this structur
 ]
 `;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Gap Analysis Agent',
             'gap-analysis',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
 
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }

@@ -1,4 +1,4 @@
-import { liteLLMService } from './litellm.service';
+import { llmService } from './llm.service';
 import { agentLogger } from './agent-logger.service';
 import { settingsService } from './settings.service';
 import { DEFAULT_INSTRUCTIONS } from '../constants/default-instructions';
@@ -53,17 +53,18 @@ Score: [0-100]%
 ## Improvement Guidance
 [Specific actionable guidance on how to improve the content]`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Critic Agent',
             'critic',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -141,18 +142,19 @@ Evaluate this content using the following rubric:
 Output your evaluation in Markdown format.
 If there are issues, provide specific suggestions for improvement.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Critic Agent',
             'critic',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }

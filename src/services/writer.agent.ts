@@ -1,4 +1,4 @@
-import { liteLLMService } from './litellm.service';
+import { llmService } from './llm.service';
 import { agentLogger } from './agent-logger.service';
 import { settingsService } from './settings.service';
 import { DEFAULT_INSTRUCTIONS } from '../constants/default-instructions';
@@ -36,17 +36,18 @@ ${transcript}
 
 Write your analysis for this segment, using only the transcript as your source.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Writer Agent',
             'writer',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -95,17 +96,18 @@ ${transcript}
 
 Rewrite the content addressing all feedback points.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Writer Agent',
             'writer',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -143,18 +145,19 @@ ${transcript}
 
 Write your analysis for this segment, using only the transcript as your source.`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Writer Agent',
             'writer',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
             let fullResponse = '';
-            for await (const chunk of liteLLMService.generateCompletionStream(systemPrompt, userPrompt)) {
+            for await (const chunk of llmService.generateCompletionStream(systemPrompt, userPrompt, model)) {
                 fullResponse += chunk;
                 yield chunk;
             }
@@ -173,17 +176,18 @@ Write your analysis for this segment, using only the transcript as your source.`
         const systemPrompt = "You are a concise technical writer. Summarize the following analysis in exactly one sentence.";
         const userPrompt = `Analysis Content:\n${content}\n\nOne sentence summary:`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Writer Agent',
             'writer',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,
@@ -204,17 +208,18 @@ Write your analysis for this segment, using only the transcript as your source.`
         const systemPrompt = "You are a technical writer. Extract exactly 10 relevant keywords from the text. Return ONLY a JSON array of strings.";
         const userPrompt = `Text:\n${content}\n\nKeywords (JSON array):`;
 
+        const model = this.getModel();
         const startTime = Date.now();
         const logId = agentLogger.logRequest(
             'Writer Agent',
             'writer',
             systemPrompt,
             userPrompt,
-            this.getModel()
+            model
         );
 
         try {
-            const result = await liteLLMService.generateCompletion(systemPrompt, userPrompt);
+            const result = await llmService.generateCompletion(systemPrompt, userPrompt, model);
             const duration = Date.now() - startTime;
             agentLogger.logResponse(logId, result.content, duration, result.usage ? {
                 prompt: result.usage.prompt_tokens,

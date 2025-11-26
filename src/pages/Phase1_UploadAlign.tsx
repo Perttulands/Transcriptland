@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TranscriptInput } from '../components/TranscriptInput';
 import { AgentLogPanel } from '../components/AgentLogPanel';
-import { ApiKeyPrompt, getStoredApiKey } from '../components/ApiKeyPrompt';
+import { ApiKeyPrompt } from '../components/ApiKeyPrompt';
 import { plannerAgent } from '../services/planner.agent';
 import { agentLogger } from '../services/agent-logger.service';
-import { liteLLMService } from '../services/litellm.service';
+import { llmService } from '../services/llm.service';
+import { settingsService } from '../services/settings.service';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
 import { PlannerOutput } from '../types/phases';
 import { AgentLog } from '../types/logging';
@@ -35,9 +36,9 @@ export function Phase1_UploadAlign() {
 
     // Check for API key and load objective template on mount
     useEffect(() => {
-        const apiKey = getStoredApiKey();
-        if (apiKey) {
-            liteLLMService.initialize(apiKey);
+        llmService.hydrateFromSettings();
+        const provider = settingsService.getProvider();
+        if (settingsService.getApiKey(provider)) {
             setHasApiKey(true);
         }
     }, []);
