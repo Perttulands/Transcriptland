@@ -19,7 +19,7 @@ export function FileUploadZone({ onFileSelect, selectedFile, onRemove }: FileUpl
                 try {
                     let text: string;
 
-                    // Check if it's a DOCX file
+                    // Parse DOCX files using mammoth, read text files directly
                     if (docxParserService.isDocxFile(file)) {
                         toast.loading('Parsing Word document...');
                         text = await docxParserService.parseDocx(file);

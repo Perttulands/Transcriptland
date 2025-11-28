@@ -17,6 +17,7 @@ export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
     const [apiKey, setApiKey] = useState('');
     const [isValidating, setIsValidating] = useState(false);
 
+    // Load saved provider and API key when modal opens
     useEffect(() => {
         if (!isOpen) {
             return;
@@ -31,6 +32,7 @@ export function ApiKeyPrompt({ isOpen, onClose, onKeySet }: ApiKeyPromptProps) {
         setApiKey(settingsService.getApiKey(provider) || '');
     };
 
+    // Validate API key with selected provider before saving
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 

@@ -42,11 +42,13 @@ const LEGACY_PROVIDER_MODELS: Partial<Record<LLMProvider, Set<string>>> = {
     google: new Set(['gemini-2.0-flash-001', 'google/gemini-2.0-flash-001'])
 };
 
+// Validate provider string against known provider configurations
 const isValidProvider = (value: string | undefined): value is LLMProvider => {
     if (!value) return false;
     return Object.prototype.hasOwnProperty.call(LLM_PROVIDER_CONFIGS, value);
 };
 
+// Update agent models when provider changes, reset if models incompatible
 const normalizeAgentsForProvider = (
     agents: Partial<AppSettings['agents']> | undefined,
     provider: LLMProvider,

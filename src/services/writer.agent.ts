@@ -227,6 +227,7 @@ Write your analysis for this segment, using only the transcript as your source.`
                 total: result.usage.total_tokens
             } : undefined);
 
+            // Parse JSON array, handling both valid and invalid responses
             try {
                 const keywords = JSON.parse(result.content.trim());
                 return Array.isArray(keywords) ? keywords : [];

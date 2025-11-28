@@ -12,10 +12,12 @@ import { Phase3_InsightExtraction } from './pages/Phase3_InsightExtraction';
 import { Phase3_5_GapAnalysis } from './pages/Phase3_5_GapAnalysis';
 import { Phase4_Consolidation } from './pages/Phase4_Consolidation';
 
+// Main application component managing routing and global state
+// Provides analysis context and agent logging to all pages
 function App() {
     const [logs, setLogs] = useState<AgentLog[]>([]);
 
-    // Subscribe to logger updates
+    // Listen for agent log updates and update local state
     useEffect(() => {
         const unsubscribe = agentLogger.subscribe((newLogs) => {
             setLogs(newLogs);

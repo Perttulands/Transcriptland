@@ -20,6 +20,8 @@ interface SegmentCardProps {
     isRewriting?: boolean;
 }
 
+// Displays a segment with its analysis, critic evaluation, and action buttons
+// Used for both main framework segments and gap analysis suggestions
 export const SegmentCard: React.FC<SegmentCardProps> = ({
     suggestion,
     analysis,

@@ -11,6 +11,7 @@ interface AgentChatFeedProps {
 export function AgentChatFeed({ messages, isStreaming = false }: AgentChatFeedProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -21,6 +22,7 @@ export function AgentChatFeed({ messages, isStreaming = false }: AgentChatFeedPr
         return null;
     }
 
+    // Map agent roles to their corresponding icons
     const getRoleIcon = (role: AgentRole) => {
         switch (role) {
             case AgentRole.PLANNER:
@@ -34,6 +36,7 @@ export function AgentChatFeed({ messages, isStreaming = false }: AgentChatFeedPr
         }
     };
 
+    // Map agent roles to their theme colors
     const getRoleColor = (role: AgentRole) => {
         switch (role) {
             case AgentRole.PLANNER:

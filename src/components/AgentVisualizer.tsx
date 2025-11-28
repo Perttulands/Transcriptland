@@ -4,6 +4,7 @@ import { agentOrchestrator } from '../services/agent.orchestrator';
 import { Loader2, CheckCircle2, XCircle, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Real-time visualization of agent execution status and progress
 export function AgentVisualizer() {
     const [agents, setAgents] = useState<Agent[]>([]);
 

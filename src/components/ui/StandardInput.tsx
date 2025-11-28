@@ -8,6 +8,8 @@ interface StandardInputProps extends React.InputHTMLAttributes<HTMLInputElement>
     variant?: 'default' | 'filled';
 }
 
+// Reusable input component with consistent styling and optional icon
+// Variants: default (bordered) or filled (subtle background)
 export const StandardInput: React.FC<StandardInputProps> = ({
     label,
     error,
