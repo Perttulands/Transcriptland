@@ -8,6 +8,7 @@ export interface CompletionResult {
     usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
 }
 
+// Facade service routing requests to Google Gemini or LiteLLM based on provider
 class LLMService {
     initialize(apiKey: string, provider?: LLMProvider): void {
         const resolvedProvider = this.resolveProvider(provider);
@@ -18,6 +19,7 @@ class LLMService {
         }
     }
 
+    // Load API key and provider from localStorage
     hydrateFromSettings(): void {
         const provider = settingsService.getProvider();
         const apiKey = settingsService.getApiKey(provider);
@@ -86,6 +88,7 @@ class LLMService {
         return provider ?? settingsService.getProvider();
     }
 
+    // Remove provider prefix for Google models (google/model -> model)
     private normalizeModel(provider: LLMProvider, model?: string): string | undefined {
         if (!model) {
             return undefined;

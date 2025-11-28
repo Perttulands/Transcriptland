@@ -17,6 +17,8 @@ interface AnalysisContextType {
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);
 
+// Central state management for the multi-phase analysis workflow
+// Manages transcript, planner output, framework, analyses, and gap analysis
 export function AnalysisProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<AnalysisState>({
         currentPhase: Phase.UPLOAD_ALIGN,
@@ -28,6 +30,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         gapAnalysis: undefined,
     });
 
+    // Update planner output and transcript for Phase 1
     const setPhase1Data = (plannerOutput: PlannerOutput, transcript: string) => {
         setState(prev => ({
             ...prev,
@@ -70,6 +73,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         }));
     };
 
+    // Move a gap analysis into the main framework as a permanent segment
     const addGapToMainAnalysis = (gapId: string, analysis: SegmentAnalysis, suggestion?: GapSuggestion) => {
         setState(prev => {
             const newAnalyses = new Map(prev.segmentAnalyses);

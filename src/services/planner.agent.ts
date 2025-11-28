@@ -274,7 +274,7 @@ Create an analysis framework with 3-5 segments that will guide the extraction of
                 total: result.usage.total_tokens
             } : undefined);
 
-            // Parse the JSON response
+            // Extract JSON response from potential markdown code blocks
             const jsonMatch = result.content.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
                 throw new Error('Failed to parse framework response');

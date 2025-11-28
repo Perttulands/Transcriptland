@@ -9,6 +9,8 @@ interface UseStreamingTextOptions {
     typingSpeed?: number; // characters per second
 }
 
+// Hook for managing streaming text with optional typing animation
+// Buffers incoming chunks and displays them with configurable typing speed
 export function useStreamingText(options: UseStreamingTextOptions = {}) {
     const [text, setText] = useState('');
     const [state, setState] = useState<StreamingState>('idle');
@@ -52,13 +54,14 @@ export function useStreamingText(options: UseStreamingTextOptions = {}) {
         }
     };
 
-    // Simulate typing effect
+    // Simulate typing effect by revealing characters progressively
     useEffect(() => {
         if (!simulateTyping) {
             setText(bufferRef.current);
             return;
         }
 
+        // Calculate characters to reveal per animation frame
         const charsPerFrame = Math.max(1, Math.floor(typingSpeed / 60)); // 60 FPS
         let currentIndex = text.length;
 

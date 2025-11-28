@@ -148,7 +148,7 @@ The JSON block must be wrapped in \`\`\`json ... \`\`\` and follow this structur
     }
 
     /**
-     * Parse gap identification response to extract suggestions
+     * Parse gap suggestions from JSON code block in LLM response
      */
     parseGapSuggestions(text: string): GapSuggestion[] {
         const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);

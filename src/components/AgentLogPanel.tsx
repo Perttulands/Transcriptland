@@ -9,6 +9,8 @@ interface AgentLogPanelProps {
     onClear: () => void;
 }
 
+// Developer panel displaying detailed agent interaction logs
+// Shows request/response pairs, errors, and token usage
 export function AgentLogPanel({ logs, onClear }: AgentLogPanelProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [selectedLog, setSelectedLog] = useState<AgentLog | null>(null);
@@ -22,6 +24,7 @@ export function AgentLogPanel({ logs, onClear }: AgentLogPanelProps) {
         });
     };
 
+    // Color-code log actions for visual distinction
     const getActionColor = (action: AgentLog['action']) => {
         switch (action) {
             case 'request':

@@ -9,6 +9,7 @@ interface TranscriptInputProps {
     onRemoveFile: () => void;
 }
 
+// Allow transcript input via file upload or direct text paste
 export function TranscriptInput({ onFileSelect, selectedFile, onRemoveFile }: TranscriptInputProps) {
     const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
     const [textInput, setTextInput] = useState('');

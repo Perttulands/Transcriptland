@@ -29,7 +29,7 @@
 4. User can copy to clipboard or download as .md file
 
 ### User experience
-1. **CRITICAL**: User MUST see text flowing smoothly as AI generates in real-time. All agent outputs must use streaming to show character-by-character or word-by-word generation. This creates engagement and transparency. When multiple agents are working in parallel, user can see each of their work streaming in separate windows simultaneously.
+1. Streaming agent output is preferred. This creates engagement and transparency. When multiple agents are working in parallel, user can see each of their work streaming in separate windows simultaneously.
 2. Our clickable objects are very clickable and satisfying to click with smooth hover effects and micro-animations
 3. We use the design system outlined in /design_system.md 
 4. There is a logging panel that tracks everything sent to agents and their responses to support debugging. It should include all instructions we send and there is a functionality to click agent name to see the full agent config and code 

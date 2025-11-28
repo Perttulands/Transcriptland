@@ -25,6 +25,7 @@ export function PhaseIndicator() {
         setShowResetConfirm(false);
     };
 
+    // Determine if a phase is completed, active, or upcoming based on current phase
     const getPhaseStatus = (phase: Phase): 'completed' | 'active' | 'upcoming' => {
         const currentIndex = PHASE_INFO.findIndex(p => p.phase === currentPhase);
         const phaseIndex = PHASE_INFO.findIndex(p => p.phase === phase);
@@ -80,6 +81,7 @@ export function PhaseIndicator() {
                                 style={{
                                     zIndex: 0,
                                     left: 'calc(20px + 0.5rem)',
+                                    // Width is percentage of distance between first and last phase
                                     width: `calc((${PHASE_INFO.findIndex(p => p.phase === currentPhase)} / ${PHASE_INFO.length - 1}) * (100% - 40px - 1rem))`
                                 }}
                             ></div>

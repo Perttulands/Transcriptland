@@ -11,10 +11,12 @@ const PHASE_ROUTES: Record<Phase, string> = {
     [Phase.CONSOLIDATION]: '/consolidation',
 };
 
+// Navigation hook enforcing phase-to-phase progression rules
 export function usePhaseNavigation() {
     const navigate = useNavigate();
     const { currentPhase, canProceedToPhase, setCurrentPhase } = useAnalysisContext();
 
+    // Navigate forward with validation
     const proceedToNextPhase = () => {
         const nextPhase = getNextPhase(currentPhase);
 

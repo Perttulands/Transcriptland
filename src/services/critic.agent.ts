@@ -76,12 +76,13 @@ Score: [0-100]%
             const sourceAlignmentMatch = result.content.match(/## Source Alignment\s+(PASS|FAIL)/i);
             const sourceAlignment = sourceAlignmentMatch?.[1]?.toUpperCase() === 'PASS';
 
-            // Extract source alignment issues
+            // Extract source alignment issues from bullet points
             const sourceAlignmentIssues: string[] = [];
             if (!sourceAlignment) {
                 const issuesSection = result.content.match(/## Source Alignment[\s\S]*?(?=## Objective Fulfillment|$)/i)?.[0];
                 if (issuesSection) {
                     const lines = issuesSection.split('\n');
+                    // Extract bullet points from issues section
                     for (const line of lines) {
                         if (line.trim().match(/^[-•*]\s+/)) {
                             sourceAlignmentIssues.push(line.trim().replace(/^[-•*]\s+/, ''));

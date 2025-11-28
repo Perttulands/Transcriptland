@@ -47,7 +47,7 @@ export class AgentOrchestrator {
             });
         });
 
-        // Execute all tasks in parallel
+        // Execute all tasks in parallel using Promise.allSettled
         const results = await Promise.allSettled(
             agentTasks.map(async ({ id, task }) => {
 

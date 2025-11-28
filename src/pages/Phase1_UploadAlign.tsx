@@ -34,7 +34,7 @@ export function Phase1_UploadAlign() {
     const [analysisObjective, setAnalysisObjective] = useState('');
     const [newTag, setNewTag] = useState('');
 
-    // Check for API key and load objective template on mount
+    // Initialize API key state and load from localStorage
     useEffect(() => {
         llmService.hydrateFromSettings();
         const provider = settingsService.getProvider();
@@ -107,6 +107,7 @@ export function Phase1_UploadAlign() {
         setMetadataTags(metadataTags.filter(tag => tag !== tagToRemove));
     };
 
+    // Validate all fields before proceeding to avoid navigation with incomplete data
     const proceedToFramework = () => {
         // Validate local state (not context state to avoid race condition)
         if (!transcript || !contextUnderstanding || metadataTags.length === 0 || !analysisObjective) {
