@@ -16,6 +16,8 @@ npm run dev      # Start development server (http://localhost:5173)
 npm run build    # TypeScript compile + production build
 npm run lint     # ESLint check (strict mode, zero warnings allowed)
 npm run preview  # Preview production build
+npm run test     # Run Playwright UI tests
+npm run test:ui  # Run tests with interactive UI
 ```
 
 ---
@@ -27,11 +29,15 @@ npm run preview  # Preview production build
 - **TailwindCSS** with custom Solita design system
 - **React Router 7** for client-side routing
 - **Google Gemini SDK** and **LiteLLM** for multi-model LLM support
+- **Playwright** for end-to-end UI testing
 - **No backend** - frontend-only SPA with localStorage persistence
 
 ### Directory Structure
 
 ```
+e2e/                     # Playwright UI tests
+├── app.spec.ts         # Core app functionality
+└── phases.spec.ts      # Phase navigation tests
 src/
 ├── components/          # React UI components
 │   ├── ui/             # Base UI (inputs, text areas, streaming)
@@ -220,14 +226,44 @@ Red:        #D04848
 
 ## Testing & Debugging
 
+### UI Testing with Playwright
+
+**Test Commands:**
+```bash
+npm run test         # Run all tests headlessly
+npm run test:ui      # Interactive test runner UI
+npm run test:headed  # Run tests in visible browser
+npm run test:debug   # Debug mode with inspector
+npm run test:report  # View HTML test report
+```
+
+**Test Structure:**
+```
+e2e/
+├── app.spec.ts      # Core app functionality tests
+└── phases.spec.ts   # Phase navigation tests
+```
+
+**Writing Tests:**
+- Tests live in `e2e/` directory
+- Use `@playwright/test` framework
+- Dev server auto-starts via `playwright.config.ts`
+- Tests run against `http://localhost:5173`
+
+**Example Test:**
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('should display Phase 1 page', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Phase 1/i })).toBeVisible();
+});
+```
+
 ### Agent Debugging
 - AgentLogPanel shows all LLM interactions
 - Logs include: timestamp, agent, action, prompt, response, duration, tokens
 - Located at bottom of interface
-
-### No Test Framework
-- No Jest/Vitest currently configured
-- Manual testing via dev server
 
 ---
 
@@ -258,6 +294,12 @@ npm run preview  # Test build locally
 ### Check Code Quality
 ```bash
 npm run lint
+```
+
+### Run UI Tests
+```bash
+npm run test           # Run all tests
+npm run test:headed    # Watch tests in browser
 ```
 
 ### Configure API Key
