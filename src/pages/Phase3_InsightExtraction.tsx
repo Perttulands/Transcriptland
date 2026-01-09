@@ -8,6 +8,8 @@ import { criticAgent } from '../services/critic.agent';
 import { SegmentAnalysis, CriticEvaluation } from '../types/phases';
 import { Lightbulb, ArrowRight, ArrowLeft, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { GuidedHint } from '../components/GuidedHint';
+import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase3_InsightExtraction() {
     const { state, setPhase3Data } = useAnalysisContext();
@@ -187,6 +189,13 @@ export function Phase3_InsightExtraction() {
                         Launch writer agents to analyze each segment in parallel
                     </p>
                 </div>
+
+                {/* Guided Hint */}
+                <GuidedHint
+                    hintId={PHASE_HINTS.phase3.analysis.id}
+                    title={PHASE_HINTS.phase3.analysis.title}
+                    description={PHASE_HINTS.phase3.analysis.description}
+                />
 
                 {/* Launch Analysis Team Button */}
                 {analyses.size === 0 && (

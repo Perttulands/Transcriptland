@@ -4,7 +4,7 @@ import { Phase } from '../types/phases';
 import toast from 'react-hot-toast';
 
 const PHASE_ROUTES: Record<Phase, string> = {
-    [Phase.UPLOAD_ALIGN]: '/',
+    [Phase.UPLOAD_ALIGN]: '/upload',
     [Phase.PROCESSING_VALIDATION]: '/framework',
     [Phase.INSIGHT_EXTRACTION]: '/extraction',
     [Phase.GAP_ANALYSIS]: '/gap-analysis',

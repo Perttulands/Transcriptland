@@ -21,7 +21,7 @@ export function PhaseIndicator() {
 
     const handleReset = () => {
         resetAnalysis();
-        navigate('/');
+        navigate('/upload');
         setShowResetConfirm(false);
     };
 

@@ -8,6 +8,8 @@ import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
 import { StandardTextArea } from '../components/ui/StandardTextArea';
 import { writerAgent } from '../services/writer.agent';
+import { GuidedHint } from '../components/GuidedHint';
+import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase4_Consolidation() {
     const navigate = useNavigate();
@@ -141,7 +143,7 @@ export function Phase4_Consolidation() {
     const handleStartOver = () => {
         resetAnalysis();
         setShowResetConfirm(false);
-        navigate('/');
+        navigate('/upload');
         toast.success('Ready for a new analysis!');
     };
 
@@ -158,6 +160,13 @@ export function Phase4_Consolidation() {
                         Review and export your consolidated analysis
                     </p>
                 </div>
+
+                {/* Guided Hint */}
+                <GuidedHint
+                    hintId={PHASE_HINTS.phase4.consolidation.id}
+                    title={PHASE_HINTS.phase4.consolidation.title}
+                    description={PHASE_HINTS.phase4.consolidation.description}
+                />
 
                 {/* Stats Card */}
                 <div className="bg-white border border-solita-light-grey rounded-lg p-6 mb-6 shadow-sm">

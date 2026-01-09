@@ -9,6 +9,8 @@ import { Reorder } from 'framer-motion';
 import { FileText, Sparkles, ArrowRight, ArrowLeft, Plus, Tag } from 'lucide-react';
 import { StreamingOutput } from '../components/ui/StreamingOutput';
 import toast from 'react-hot-toast';
+import { GuidedHint } from '../components/GuidedHint';
+import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase2_ProcessingValidation() {
     const { state, setPhase2Data } = useAnalysisContext();
@@ -157,6 +159,13 @@ export function Phase2_ProcessingValidation() {
                         Generate and refine the analysis framework
                     </p>
                 </div>
+
+                {/* Guided Hint */}
+                <GuidedHint
+                    hintId={PHASE_HINTS.phase2.framework.id}
+                    title={PHASE_HINTS.phase2.framework.title}
+                    description={PHASE_HINTS.phase2.framework.description}
+                />
 
                 {/* Phase 1 Summary */}
                 <div className="bg-white border border-solita-light-grey rounded-lg p-6 mb-6 shadow-sm">

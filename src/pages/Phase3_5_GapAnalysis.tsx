@@ -11,6 +11,8 @@ import { StandardInput } from '../components/ui/StandardInput';
 import { StandardTextArea } from '../components/ui/StandardTextArea';
 import { StreamingOutput } from '../components/ui/StreamingOutput';
 import toast from 'react-hot-toast';
+import { GuidedHint } from '../components/GuidedHint';
+import { PHASE_HINTS } from '../constants/hints';
 
 type AnalysisStep = 'identify' | 'analyze';
 
@@ -218,6 +220,13 @@ export function Phase3_5_GapAnalysis() {
                         Identify and analyze unexplored themes from the transcript
                     </p>
                 </div>
+
+                {/* Guided Hint */}
+                <GuidedHint
+                    hintId={PHASE_HINTS.phase3_5.gap.id}
+                    title={PHASE_HINTS.phase3_5.gap.title}
+                    description={PHASE_HINTS.phase3_5.gap.description}
+                />
 
                 {/* Identify Step */}
                 {step === 'identify' && (

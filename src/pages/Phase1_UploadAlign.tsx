@@ -14,6 +14,8 @@ import { Sparkles, Tag, Target, ArrowRight, Loader2, Key, FileText, XCircle } fr
 import toast from 'react-hot-toast';
 import { StandardTextArea } from '../components/ui/StandardTextArea';
 import { StandardInput } from '../components/ui/StandardInput';
+import { GuidedHint } from '../components/GuidedHint';
+import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase1_UploadAlign() {
     const { setPhase1Data } = useAnalysisContext();
@@ -164,6 +166,13 @@ export function Phase1_UploadAlign() {
                             Upload your transcript (.txt, .md, .docx) and let AI understand the context
                         </p>
                     </div>
+
+                    {/* Guided Hint */}
+                    <GuidedHint
+                        hintId={PHASE_HINTS.phase1.upload.id}
+                        title={PHASE_HINTS.phase1.upload.title}
+                        description={PHASE_HINTS.phase1.upload.description}
+                    />
 
                     {/* Transcript Input */}
                     <div className="bg-white border border-solita-light-grey rounded-lg p-6 mb-6 shadow-sm">
