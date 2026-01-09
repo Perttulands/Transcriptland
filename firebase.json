@@ -1,5 +1,6 @@
 {
     "hosting": {
+        "target": "transcriptor",
         "public": "dist",
         "ignore": [
             "firebase.json",

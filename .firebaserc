@@ -1,5 +1,15 @@
 {
-    "projects": {
-        "default": "transcriptai-perttuland"
+  "projects": {
+    "default": "perttuland"
+  },
+  "targets": {
+    "perttuland": {
+      "hosting": {
+        "transcriptor": [
+          "transcriptor-perttuland"
+        ]
+      }
     }
+  },
+  "etags": {}
 }
