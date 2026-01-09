@@ -10,7 +10,7 @@ import { settingsService } from '../services/settings.service';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
 import { PlannerOutput } from '../types/phases';
 import { AgentLog } from '../types/logging';
-import { Sparkles, Tag, Target, ArrowRight, Loader2, Key, FileText, XCircle } from 'lucide-react';
+import { Sparkles, Tag, Target, ArrowRight, Loader2, Key, FileText, XCircle, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StandardTextArea } from '../components/ui/StandardTextArea';
 import { StandardInput } from '../components/ui/StandardInput';
@@ -75,6 +75,13 @@ export function Phase1_UploadAlign() {
             return;
         }
 
+        // Check for API key before attempting analysis
+        if (!hasApiKey) {
+            toast.error('Please set your API key first');
+            setShowApiKeyPrompt(true);
+            return;
+        }
+
         setIsAnalyzing(true);
 
         try {
@@ -92,7 +99,14 @@ export function Phase1_UploadAlign() {
             toast.success('Analysis complete!');
         } catch (error) {
             console.error('Analysis failed:', error);
-            toast.error('Failed to analyze transcript. Please try again.');
+            // Check if error is related to API key
+            const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
+            if (errorMessage.includes('api') || errorMessage.includes('key') || errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+                toast.error('API key error. Please check your API key is valid.');
+                setShowApiKeyPrompt(true);
+            } else {
+                toast.error('Analysis failed. Please check your API key and try again.');
+            }
         } finally {
             setIsAnalyzing(false);
         }
@@ -173,6 +187,27 @@ export function Phase1_UploadAlign() {
                         title={PHASE_HINTS.phase1.upload.title}
                         description={PHASE_HINTS.phase1.upload.description}
                     />
+
+                    {/* API Key Warning Banner */}
+                    {!hasApiKey && (
+                        <div className="bg-solita-red/10 border border-solita-red/30 rounded-lg p-4 mb-6">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="w-6 h-6 text-solita-red flex-shrink-0" />
+                                <div className="flex-1">
+                                    <h4 className="font-medium text-solita-black">API Key Required</h4>
+                                    <p className="text-sm text-solita-dark-grey mt-1">
+                                        You need to set an API key before you can analyze transcripts.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowApiKeyPrompt(true)}
+                                    className="px-4 py-2 bg-solita-red hover:bg-solita-red/90 text-white rounded-lg transition-colors text-sm font-medium"
+                                >
+                                    Set API Key
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Transcript Input */}
                     <div className="bg-white border border-solita-light-grey rounded-lg p-6 mb-6 shadow-sm">
