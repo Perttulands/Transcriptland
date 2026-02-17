@@ -81,6 +81,7 @@ export interface AnalysisState {
     transcript: string;
     plannerOutput?: PlannerOutput;
     framework?: AnalysisFramework;
+    importedFramework?: AnalysisFramework;
     segmentAnalyses: Map<string, SegmentAnalysis>;
     criticEvaluations: Map<string, CriticEvaluation>;
     gapAnalysis?: GapAnalysis;

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
+import { useAutopilot } from '../contexts/AutopilotContext';
 import { usePhaseNavigation } from '../hooks/usePhaseNavigation';
 import { ElegantLoader } from '../components/ElegantLoader';
 import { SegmentCard } from '../components/SegmentCard';
@@ -13,6 +14,7 @@ import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase3_InsightExtraction() {
     const { state, setPhase3Data } = useAnalysisContext();
+    const autopilot = useAutopilot();
     const { proceedToNextPhase, goToPreviousPhase, canGoBack, skipToConsolidation, canProceed } = usePhaseNavigation();
 
     const [analyses, setAnalyses] = useState<Map<string, SegmentAnalysis>>(state.segmentAnalyses);
@@ -24,6 +26,104 @@ export function Phase3_InsightExtraction() {
     const [rewritingSegments, setRewritingSegments] = useState<Set<string>>(new Set());
 
     const segments = state.framework?.segments || [];
+    const hasAutoStarted = useRef(false);
+    const hasCriticRun = useRef(false);
+    const hasAutoProceeded = useRef(false);
+
+    // Autopilot: auto-launch analysis team on mount
+    useEffect(() => {
+        if (
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            !hasAutoStarted.current &&
+            analyses.size === 0 &&
+            segments.length > 0
+        ) {
+            hasAutoStarted.current = true;
+            autopilot.setCurrentStep('Phase 3: Launching writer agents...');
+            launchAnalysisTeam();
+        }
+    }, [autopilot.isAutopilot, autopilot.isPaused]);
+
+    // Autopilot: after analysis completes, optionally run critic then proceed
+    useEffect(() => {
+        if (
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            !isAnalyzing &&
+            analyses.size > 0 &&
+            !hasAutoProceeded.current
+        ) {
+            // Don't proceed while critic/rewrite is still in progress
+            if (evaluatingSegments.size > 0 || rewritingSegments.size > 0) return;
+
+            const allComplete = Array.from(analyses.values()).every(a => a.status === 'complete');
+            if (!allComplete) return;
+
+            // If critic enabled and not yet run, run critic on all segments
+            if (autopilot.enableCritic && !hasCriticRun.current) {
+                hasCriticRun.current = true;
+                autopilot.setCurrentStep('Phase 3: Running critic evaluations...');
+                runCriticAndRewriteAll();
+                return;
+            }
+
+            // Proceed to next phase
+            hasAutoProceeded.current = true;
+            autopilot.setCurrentStep('Phase 3 complete — proceeding to Gap Analysis...');
+            const timer = setTimeout(() => proceedToNextPhase(), 400);
+            return () => clearTimeout(timer);
+        }
+    }, [analyses, isAnalyzing, autopilot.isAutopilot, autopilot.isPaused, evaluatingSegments.size, rewritingSegments.size]);
+
+    const runCriticAndRewriteAll = async () => {
+        // Local accumulator to avoid stale-closure issues with `analyses` from the
+        // render that scheduled this call.  Each iteration reads from & writes to
+        // this map so every rewrite is preserved.
+        const accumulated = new Map(analyses);
+        try {
+            for (const segment of segments) {
+                const analysis = accumulated.get(segment.id);
+                if (!analysis || !state.transcript) continue;
+
+                setEvaluatingSegments(prev => new Set(prev).add(segment.id));
+                try {
+                    const evaluation = await criticAgent.evaluateSegment(
+                        segment.id,
+                        analysis.content,
+                        segment.objective,
+                        state.transcript
+                    );
+                    setCriticEvaluations(prev => new Map(prev).set(segment.id, evaluation));
+
+                    // Auto-rewrite based on critic feedback
+                    if (autopilot.isAutopilot && !autopilot.isPaused) {
+                        autopilot.setCurrentStep(`Phase 3: Rewriting "${segment.title}"...`);
+                        setRewritingSegments(prev => new Set(prev).add(segment.id));
+                        const rewritten = await writerAgent.rewriteSegment(
+                            analysis.content,
+                            evaluation.evaluation,
+                            segment.objective,
+                            state.transcript
+                        );
+                        const updated: SegmentAnalysis = { ...analysis, content: rewritten, generatedAt: new Date() };
+                        accumulated.set(segment.id, updated);
+                        setAnalyses(prev => new Map(prev).set(segment.id, updated));
+                        setRewritingSegments(prev => { const s = new Set(prev); s.delete(segment.id); return s; });
+                        setCriticEvaluations(prev => { const m = new Map(prev); m.delete(segment.id); return m; });
+                    }
+                } finally {
+                    setEvaluatingSegments(prev => { const s = new Set(prev); s.delete(segment.id); return s; });
+                }
+            }
+            // Flush all rewrites to context once at the end
+            setPhase3Data(Array.from(accumulated.values()));
+        } catch (error) {
+            console.error('Critic/rewrite failed:', error);
+            toast.error('Critic evaluation failed');
+            if (autopilot.isAutopilot) autopilot.stop();
+        }
+    };
 
     const launchAnalysisTeam = async () => {
         if (!state.framework || !state.transcript) {
@@ -87,6 +187,7 @@ export function Phase3_InsightExtraction() {
         } catch (error) {
             console.error('Analysis failed:', error);
             toast.error('Some analyses failed. Check the log panel.');
+            if (autopilot.isAutopilot) autopilot.stop();
         } finally {
             setIsAnalyzing(false);
             setAnalyzingSegments(new Set());

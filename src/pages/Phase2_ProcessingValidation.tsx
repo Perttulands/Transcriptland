@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
+import { useAutopilot } from '../contexts/AutopilotContext';
 import { usePhaseNavigation } from '../hooks/usePhaseNavigation';
 import { FrameworkSegmentCard } from '../components/FrameworkSegmentCard';
 import { ElegantLoader } from '../components/ElegantLoader';
@@ -13,12 +14,59 @@ import { GuidedHint } from '../components/GuidedHint';
 import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase2_ProcessingValidation() {
-    const { state, setPhase2Data } = useAnalysisContext();
+    const { state, setPhase2Data, clearImportedFramework } = useAnalysisContext();
+    const autopilot = useAutopilot();
     const { proceedToNextPhase, goToPreviousPhase, canGoBack } = usePhaseNavigation();
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [streamingText, setStreamingText] = useState('');
     const [segments, setSegments] = useState<FrameworkSegment[]>(state.framework?.segments || []);
+    const hasAutoStarted = useRef(false);
+    const hasAutoProceeded = useRef(false);
+
+    // On mount: if there's an imported framework, pre-populate segments
+    useEffect(() => {
+        if (state.importedFramework && segments.length === 0) {
+            const imported = state.importedFramework;
+            setSegments(imported.segments);
+            setPhase2Data(imported);
+            clearImportedFramework();
+            toast.success(`Imported framework with ${imported.segments.length} segments`);
+        }
+    }, []);
+
+    // Autopilot: auto-generate framework on mount if no segments yet
+    useEffect(() => {
+        if (
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            !hasAutoStarted.current &&
+            segments.length === 0 &&
+            !state.importedFramework &&
+            state.plannerOutput &&
+            state.transcript
+        ) {
+            hasAutoStarted.current = true;
+            autopilot.setCurrentStep('Phase 2: Generating framework...');
+            generateFramework();
+        }
+    }, [autopilot.isAutopilot, autopilot.isPaused]);
+
+    // Autopilot: auto-proceed when framework is ready
+    useEffect(() => {
+        if (
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            !hasAutoProceeded.current &&
+            segments.length > 0 &&
+            !isGenerating
+        ) {
+            hasAutoProceeded.current = true;
+            autopilot.setCurrentStep('Phase 2 complete — proceeding to Insight Extraction...');
+            const timer = setTimeout(() => proceedToPhase3(), 400);
+            return () => clearTimeout(timer);
+        }
+    }, [segments.length, isGenerating, autopilot.isAutopilot, autopilot.isPaused]);
 
     const generateFramework = async () => {
         if (!state.plannerOutput || !state.transcript) {
@@ -71,6 +119,7 @@ export function Phase2_ProcessingValidation() {
         } catch (error) {
             console.error('Framework generation failed:', error);
             toast.error('Failed to generate framework. Please try again.');
+            if (autopilot.isAutopilot) autopilot.stop();
         } finally {
             setIsGenerating(false);
             setStreamingText('');

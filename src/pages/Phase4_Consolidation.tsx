@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
+import { useAutopilot } from '../contexts/AutopilotContext';
 import { usePhaseNavigation } from '../hooks/usePhaseNavigation';
 import { Download, Copy, CheckCircle, RotateCcw, ArrowLeft, Eye, Edit } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -14,12 +15,20 @@ import { PHASE_HINTS } from '../constants/hints';
 export function Phase4_Consolidation() {
     const navigate = useNavigate();
     const { state, resetAnalysis } = useAnalysisContext();
+    const autopilot = useAutopilot();
     const { goToPreviousPhase, canGoBack } = usePhaseNavigation();
     const [consolidatedText, setConsolidatedText] = useState('');
     const [copied, setCopied] = useState(false);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Stop autopilot when arriving at the final phase
+    useEffect(() => {
+        if (autopilot.isAutopilot) {
+            autopilot.stop();
+        }
+    }, []);
 
     useEffect(() => {
         // Consolidate all segments into a single markdown document

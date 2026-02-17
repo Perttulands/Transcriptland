@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnalysisProvider } from './contexts/AnalysisContext';
+import { AutopilotProvider } from './contexts/AutopilotContext';
 import { PhaseIndicator } from './components/PhaseIndicator';
+import { AutopilotBar } from './components/AutopilotBar';
 import { AgentLogPanel } from './components/AgentLogPanel';
 import { agentLogger } from './services/agent-logger.service';
 import { AgentLog } from './types/logging';
@@ -29,19 +31,22 @@ function AppContent() {
 
     return (
         <AnalysisProvider>
-            <div className="min-h-screen bg-solita-light-grey">
-                {!isLandingPage && <PhaseIndicator />}
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/upload" element={<Phase1_UploadAlign />} />
-                    <Route path="/framework" element={<Phase2_ProcessingValidation />} />
-                    <Route path="/extraction" element={<Phase3_InsightExtraction />} />
-                    <Route path="/gap-analysis" element={<Phase3_5_GapAnalysis />} />
-                    <Route path="/consolidation" element={<Phase4_Consolidation />} />
-                </Routes>
-            </div>
-            <Toaster position="top-right" />
-            {!isLandingPage && <AgentLogPanel logs={logs} onClear={() => agentLogger.clearLogs()} />}
+            <AutopilotProvider>
+                <div className="min-h-screen bg-solita-light-grey">
+                    {!isLandingPage && <PhaseIndicator />}
+                    <Routes>
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/upload" element={<Phase1_UploadAlign />} />
+                        <Route path="/framework" element={<Phase2_ProcessingValidation />} />
+                        <Route path="/extraction" element={<Phase3_InsightExtraction />} />
+                        <Route path="/gap-analysis" element={<Phase3_5_GapAnalysis />} />
+                        <Route path="/consolidation" element={<Phase4_Consolidation />} />
+                    </Routes>
+                </div>
+                <AutopilotBar />
+                <Toaster position="top-right" />
+                {!isLandingPage && <AgentLogPanel logs={logs} onClear={() => agentLogger.clearLogs()} />}
+            </AutopilotProvider>
         </AnalysisProvider>
     );
 }

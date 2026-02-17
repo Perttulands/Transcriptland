@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
+import { useAutopilot } from '../contexts/AutopilotContext';
 import { usePhaseNavigation } from '../hooks/usePhaseNavigation';
 import { gapAnalysisAgent } from '../services/gap-analysis.agent';
 import { writerAgent } from '../services/writer.agent';
@@ -18,6 +19,7 @@ type AnalysisStep = 'identify' | 'analyze';
 
 export function Phase3_5_GapAnalysis() {
     const { state, addGapToMainAnalysis } = useAnalysisContext();
+    const autopilot = useAutopilot();
     const { goToPreviousPhase, proceedToNextPhase, canGoBack } = usePhaseNavigation();
 
     const [step, setStep] = useState<AnalysisStep>('identify');
@@ -38,6 +40,85 @@ export function Phase3_5_GapAnalysis() {
     // Custom gap state
     const [isAddingCustom, setIsAddingCustom] = useState(false);
     const [customGap, setCustomGap] = useState({ title: '', objective: '', guidance: '', rationale: '' });
+
+    // Autopilot confirmation modal
+    const [showGapConfirm, setShowGapConfirm] = useState(false);
+    const hasShownConfirm = useRef(false);
+    const hasAutoProceeded = useRef(false);
+    const hasAutoAnalyzed = useRef(false);
+
+    // Autopilot: show confirmation modal on mount
+    useEffect(() => {
+        if (autopilot.isAutopilot && !autopilot.isPaused && !hasShownConfirm.current) {
+            hasShownConfirm.current = true;
+            autopilot.setCurrentStep('Gap Analysis: Waiting for confirmation...');
+            setShowGapConfirm(true);
+        }
+    }, [autopilot.isAutopilot, autopilot.isPaused]);
+
+    const handleGapConfirmYes = async () => {
+        setShowGapConfirm(false);
+        autopilot.setCurrentStep('Gap Analysis: Identifying gaps...');
+        await identifyGaps();
+        // After identification, auto-select all gaps and analyze them
+        // The effect below will handle auto-proceeding
+    };
+
+    const handleGapConfirmNo = () => {
+        setShowGapConfirm(false);
+        autopilot.setCurrentStep('Skipping gap analysis — proceeding to Consolidation...');
+        setTimeout(() => proceedToNextPhase(), 400);
+    };
+
+    // Autopilot: after gap identification completes, auto-select all and analyze
+    useEffect(() => {
+        if (
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            !hasAutoAnalyzed.current &&
+            suggestions.length > 0 &&
+            !isIdentifying &&
+            step === 'identify'
+        ) {
+            hasAutoAnalyzed.current = true;
+            // Auto-select all gaps
+            const allIds = new Set(suggestions.map(s => s.id));
+            setSelectedGaps(allIds);
+            autopilot.setCurrentStep('Gap Analysis: Analyzing all gaps...');
+            // Move to analyze step
+            setStep('analyze');
+            for (const suggestion of suggestions) {
+                analyzeGap(suggestion);
+            }
+        }
+    }, [suggestions, isIdentifying, autopilot.isAutopilot, autopilot.isPaused]);
+
+    // Autopilot: after all gap analyses complete, proceed
+    useEffect(() => {
+        if (
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            !hasAutoProceeded.current &&
+            step === 'analyze' &&
+            gapAnalyses.size > 0 &&
+            analyzingGaps.size === 0
+        ) {
+            // Check all selected gaps have been analyzed — use suggestions length
+            // since selectedGaps may be stale from the closure
+            const expectedCount = suggestions.filter(s => gapAnalyses.has(s.id)).length;
+            if (expectedCount === suggestions.length) {
+                hasAutoProceeded.current = true;
+                // Add all to main analysis
+                for (const [gapId, analysis] of gapAnalyses.entries()) {
+                    const suggestion = suggestions.find(s => s.id === gapId);
+                    if (suggestion) addGapToMainAnalysis(gapId, analysis, suggestion);
+                    else addGapToMainAnalysis(gapId, analysis);
+                }
+                autopilot.setCurrentStep('Gap Analysis complete — proceeding to Consolidation...');
+                setTimeout(() => proceedToNextPhase(), 400);
+            }
+        }
+    }, [gapAnalyses.size, analyzingGaps.size, autopilot.isAutopilot, autopilot.isPaused, step]);
 
     const handleAddCustomGap = () => {
         if (!customGap.title || !customGap.objective) {
@@ -86,6 +167,7 @@ export function Phase3_5_GapAnalysis() {
         } catch (e) {
             console.error(e);
             toast.error('Failed to identify gaps');
+            if (autopilot.isAutopilot) autopilot.stop();
         } finally {
             setIsIdentifying(false);
         }
@@ -227,6 +309,32 @@ export function Phase3_5_GapAnalysis() {
                     title={PHASE_HINTS.phase3_5.gap.title}
                     description={PHASE_HINTS.phase3_5.gap.description}
                 />
+
+                {/* Autopilot Gap Confirmation Modal */}
+                {showGapConfirm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4">
+                            <h3 className="text-xl font-semibold text-solita-black mb-3">Include Gap Analysis?</h3>
+                            <p className="text-solita-dark-grey mb-6">
+                                Autopilot can run a gap analysis to identify unexplored themes in the transcript. This adds depth but takes extra time.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={handleGapConfirmNo}
+                                    className="px-5 py-2.5 bg-white border border-solita-light-grey text-solita-dark-grey rounded-lg hover:bg-solita-light-grey/50 transition-colors"
+                                >
+                                    No, Skip
+                                </button>
+                                <button
+                                    onClick={handleGapConfirmYes}
+                                    className="px-5 py-2.5 bg-solita-ochre hover:bg-solita-ochre/90 text-white rounded-lg transition-colors"
+                                >
+                                    Yes, Run Gap Analysis
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Identify Step */}
                 {step === 'identify' && (

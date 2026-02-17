@@ -13,6 +13,8 @@ interface AnalysisContextType {
     canProceedToPhase: (phase: Phase) => boolean;
     currentPhase: Phase;
     setCurrentPhase: (phase: Phase) => void;
+    setImportedFramework: (framework: AnalysisFramework) => void;
+    clearImportedFramework: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);
@@ -27,8 +29,17 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         framework: undefined,
         segmentAnalyses: new Map(),
         criticEvaluations: new Map(),
+        importedFramework: undefined,
         gapAnalysis: undefined,
     });
+
+    const setImportedFramework = (framework: AnalysisFramework) => {
+        setState(prev => ({ ...prev, importedFramework: framework }));
+    };
+
+    const clearImportedFramework = () => {
+        setState(prev => ({ ...prev, importedFramework: undefined }));
+    };
 
     // Update planner output and transcript for Phase 1
     const setPhase1Data = (plannerOutput: PlannerOutput, transcript: string) => {
@@ -126,6 +137,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
             transcript: '',
             plannerOutput: undefined,
             framework: undefined,
+            importedFramework: undefined,
             segmentAnalyses: new Map(),
             criticEvaluations: new Map(),
             gapAnalysis: undefined,
@@ -167,6 +179,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
                 canProceedToPhase,
                 currentPhase: state.currentPhase,
                 setCurrentPhase,
+                setImportedFramework,
+                clearImportedFramework,
             }}
         >
             {children}

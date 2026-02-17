@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TranscriptInput } from '../components/TranscriptInput';
 import { AgentLogPanel } from '../components/AgentLogPanel';
 import { ApiKeyPrompt } from '../components/ApiKeyPrompt';
+import { ImportTemplateModal } from '../components/ImportTemplateModal';
 import { plannerAgent } from '../services/planner.agent';
 import { agentLogger } from '../services/agent-logger.service';
 import { llmService } from '../services/llm.service';
 import { settingsService } from '../services/settings.service';
 import { useAnalysisContext } from '../contexts/AnalysisContext';
-import { PlannerOutput } from '../types/phases';
+import { useAutopilot } from '../contexts/AutopilotContext';
+import { PlannerOutput, AnalysisFramework } from '../types/phases';
+import { ParsedTemplate } from '../types/template';
 import { AgentLog } from '../types/logging';
-import { Sparkles, Tag, Target, ArrowRight, Loader2, Key, FileText, XCircle, AlertTriangle } from 'lucide-react';
+import { Sparkles, Tag, Target, ArrowRight, Loader2, Key, FileText, XCircle, AlertTriangle, Upload, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StandardTextArea } from '../components/ui/StandardTextArea';
 import { StandardInput } from '../components/ui/StandardInput';
@@ -18,7 +21,8 @@ import { GuidedHint } from '../components/GuidedHint';
 import { PHASE_HINTS } from '../constants/hints';
 
 export function Phase1_UploadAlign() {
-    const { setPhase1Data } = useAnalysisContext();
+    const { setPhase1Data, setImportedFramework } = useAnalysisContext();
+    const autopilot = useAutopilot();
     const navigate = useNavigate();
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,6 +39,15 @@ export function Phase1_UploadAlign() {
     const [metadataTags, setMetadataTags] = useState<string[]>([]);
     const [analysisObjective, setAnalysisObjective] = useState('');
     const [newTag, setNewTag] = useState('');
+
+    // Import template modal
+    const [showImportModal, setShowImportModal] = useState(false);
+
+    // Autopilot toggle (local — only starts when user clicks Analyze Context)
+    const [autopilotEnabled, setAutopilotEnabled] = useState(false);
+
+    // Track whether analysis just completed so autopilot can auto-proceed
+    const analysisJustCompleted = useRef(false);
 
     // Initialize API key state and load from localStorage
     useEffect(() => {
@@ -53,6 +66,25 @@ export function Phase1_UploadAlign() {
         return unsubscribe;
     }, []);
 
+    // Autopilot auto-proceed: when analysis completes and autopilot is active, proceed automatically
+    useEffect(() => {
+        if (
+            analysisJustCompleted.current &&
+            autopilot.isAutopilot &&
+            !autopilot.isPaused &&
+            contextUnderstanding &&
+            metadataTags.length > 0 &&
+            analysisObjective &&
+            transcript
+        ) {
+            analysisJustCompleted.current = false;
+            autopilot.setCurrentStep('Phase 1 complete — proceeding to Framework...');
+            // Small delay so user can see toast before navigation
+            const timer = setTimeout(() => proceedToFramework(), 400);
+            return () => clearTimeout(timer);
+        }
+    }, [contextUnderstanding, metadataTags, analysisObjective, transcript, autopilot.isAutopilot, autopilot.isPaused]);
+
     const handleFileSelect = (file: File | null, content: string) => {
         setSelectedFile(file);
         setTranscript(content);
@@ -69,6 +101,27 @@ export function Phase1_UploadAlign() {
         setAnalysisObjective('');
     };
 
+    const handleImportTemplate = (parsed: ParsedTemplate, _rawText: string) => {
+        // Fill Phase 1 fields
+        if (parsed.contextUnderstanding) setContextUnderstanding(parsed.contextUnderstanding);
+        if (parsed.tags.length > 0) setMetadataTags(parsed.tags);
+        if (parsed.analysisObjective) setAnalysisObjective(parsed.analysisObjective);
+
+        // Store framework segments for Phase 2 consumption
+        if (parsed.frameworkSegments.length > 0) {
+            const framework: AnalysisFramework = {
+                metadata: {
+                    title: `Imported Template`,
+                    created: new Date(),
+                    objective: parsed.analysisObjective || '',
+                    tags: parsed.tags,
+                },
+                segments: parsed.frameworkSegments,
+            };
+            setImportedFramework(framework);
+        }
+    };
+
     const analyzeTranscript = async () => {
         if (!transcript) {
             toast.error('Please provide a transcript first');
@@ -80,6 +133,15 @@ export function Phase1_UploadAlign() {
             toast.error('Please set your API key first');
             setShowApiKeyPrompt(true);
             return;
+        }
+
+        // If autopilot toggle is on, start autopilot mode
+        if (autopilotEnabled && !autopilot.isAutopilot) {
+            autopilot.start();
+        }
+
+        if (autopilot.isAutopilot) {
+            autopilot.setCurrentStep('Phase 1: Analyzing context...');
         }
 
         setIsAnalyzing(true);
@@ -97,6 +159,7 @@ export function Phase1_UploadAlign() {
             setAnalysisObjective(output.analysisObjective);
 
             toast.success('Analysis complete!');
+            analysisJustCompleted.current = true;
         } catch (error) {
             console.error('Analysis failed:', error);
             // Check if error is related to API key
@@ -107,6 +170,8 @@ export function Phase1_UploadAlign() {
             } else {
                 toast.error('Analysis failed. Please check your API key and try again.');
             }
+            // Stop autopilot on error
+            if (autopilot.isAutopilot) autopilot.stop();
         } finally {
             setIsAnalyzing(false);
         }
@@ -166,6 +231,13 @@ export function Phase1_UploadAlign() {
                                 Phase 1: Upload & Align
                             </h1>
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setShowImportModal(true)}
+                                    className="px-4 py-2 bg-white border border-solita-light-grey hover:bg-solita-ochre/10 text-solita-dark-grey rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    Import Template
+                                </button>
                                 <button
                                     onClick={() => setShowApiKeyPrompt(true)}
                                     className="px-4 py-2 bg-white border border-solita-light-grey hover:bg-solita-ochre/10 text-solita-dark-grey rounded-lg transition-colors flex items-center gap-2"
@@ -234,7 +306,23 @@ export function Phase1_UploadAlign() {
                             </div>
                         )}
 
-                        <div className="mt-6 flex justify-end">
+                        <div className="mt-6 flex items-center justify-between">
+                            {/* Autopilot toggle */}
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div
+                                    onClick={() => setAutopilotEnabled(!autopilotEnabled)}
+                                    className={`relative w-10 h-5 rounded-full transition-colors ${autopilotEnabled ? 'bg-solita-ochre' : 'bg-solita-mid-grey/40'}`}
+                                >
+                                    <div
+                                        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${autopilotEnabled ? 'translate-x-5' : ''}`}
+                                    />
+                                </div>
+                                <Zap className={`w-4 h-4 ${autopilotEnabled ? 'text-solita-ochre' : 'text-solita-mid-grey'}`} />
+                                <span className={`text-sm ${autopilotEnabled ? 'text-solita-ochre font-medium' : 'text-solita-dark-grey'}`}>
+                                    Autopilot
+                                </span>
+                            </label>
+
                             <button
                                 onClick={analyzeTranscript}
                                 disabled={isAnalyzing || !transcript}
@@ -352,7 +440,12 @@ export function Phase1_UploadAlign() {
                 onKeySet={() => setHasApiKey(true)}
             />
 
-
+            {/* Import Template Modal */}
+            <ImportTemplateModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                onImport={handleImportTemplate}
+            />
 
             {/* Agent Log Panel */}
             <AgentLogPanel logs={logs} onClear={() => agentLogger.clearLogs()} />
