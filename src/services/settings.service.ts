@@ -39,7 +39,14 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const LEGACY_PROVIDER_MODELS: Partial<Record<LLMProvider, Set<string>>> = {
-    google: new Set(['gemini-2.0-flash-001', 'google/gemini-2.0-flash-001'])
+    google: new Set(['gemini-2.0-flash-001', 'google/gemini-2.0-flash-001']),
+    litellm: new Set([
+        'google/gemini-2.0-flash-001',
+        'google/gemini-1.5-pro-002',
+        'azure/gpt-4o-mini',
+        'azure/gpt-4o',
+        'azure/o1-mini',
+    ])
 };
 
 // Validate provider string against known provider configurations

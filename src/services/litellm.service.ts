@@ -43,7 +43,7 @@ export class LiteLLMService {
                 'Authorization': `Bearer ${this.apiKey}`,
             },
             body: JSON.stringify({
-                model: model || 'google/gemini-2.0-flash-001',
+                model: model || 'google/gemini-2.5-flash',
                 messages,
             }),
         });
@@ -78,7 +78,7 @@ export class LiteLLMService {
                 'Authorization': `Bearer ${this.apiKey}`,
             },
             body: JSON.stringify({
-                model: model || 'google/gemini-2.0-flash-001',
+                model: model || 'google/gemini-2.5-flash',
                 messages,
                 stream: true,
             }),
@@ -225,7 +225,7 @@ ${transcript}`;
                     'Authorization': `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify({
-                    model: 'google/gemini-2.0-flash-001',
+                    model: 'google/gemini-2.5-flash',
                     messages: [{ role: 'user', content: 'Hello' }],
                 }),
             });

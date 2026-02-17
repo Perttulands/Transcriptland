@@ -27,14 +27,12 @@ export const LLM_PROVIDER_CONFIGS: Record<LLMProvider, LLMProviderConfig> = {
         apiKeyLabel: 'LiteLLM API Key',
         apiKeyPlaceholder: 'Enter your LiteLLM API key',
         models: [
-            { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', provider: 'Google via LiteLLM' },
             { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google via LiteLLM' },
-            { id: 'google/gemini-1.5-pro-002', name: 'Gemini 1.5 Pro', provider: 'Google via LiteLLM' },
-            { id: 'azure/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'Azure OpenAI' },
-            { id: 'azure/gpt-4o', name: 'GPT-4o', provider: 'Azure OpenAI' },
-            { id: 'azure/o1-mini', name: 'O1 Mini', provider: 'Azure OpenAI' },
+            { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google via LiteLLM' },
+            { id: 'azure/gpt-5.1', name: 'GPT-5.1', provider: 'Azure OpenAI' },
+            { id: 'anthropic/claude-4-5-sonnet-aws', name: 'Claude 4.5 Sonnet', provider: 'Anthropic via AWS' },
         ],
-        defaultModel: 'google/gemini-2.0-flash-001',
+        defaultModel: 'google/gemini-2.5-flash',
     },
     google: {
         id: 'google',
